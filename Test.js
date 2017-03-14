@@ -4,7 +4,7 @@
 "use strict";
 
 var Core = require("lapis-core/index.js");
-var Session = require("lazuli-access/Session.js");
+var Access = require("lazuli-access/index.js");
 
 module.exports = Core.Base.clone({
     id: "Test",
@@ -391,7 +391,7 @@ module.exports.define("runSubTest", function (test_obj_id, relative_path, params
 
 module.exports.define("changeSession", function (user_id) {
     if (!this.scope.sessions_by_user_id[user_id] || !this.scope.sessions_by_user_id[user_id].active) {
-        this.scope.sessions_by_user_id[user_id] = Session.clone({
+        this.scope.sessions_by_user_id[user_id] = Access.Session.clone({
             user_id: user_id,
         });
     }
