@@ -72,7 +72,7 @@ module.exports.override("test", function () {
 //        }
 //    }, base_overrides);
 
-
+    this.ignore_errors = true;
     Data.entities.forOwn(function (key, entity) {
         var path = Rhino.app.sapphire_dir + "/" + entity.area + "/test/units/";
         if (!that.entity ||
@@ -83,7 +83,7 @@ module.exports.override("test", function () {
             that.coverage(key, path, that.results[entity.id]);
         }
     });
-
+    this.ignore_errors = false;
     //this.resetFunctions(base_overrides);
     if (IO.File.exists("reports") && !this.no_report) {
         this.renderReport();
