@@ -1,9 +1,10 @@
-/* global Packages */
+/* global module, require */
+
 
 "use strict";
 
 var Core = require("lapis-core/index.js");
-
+var Session = require("lazuli-access/Session.js");
 
 module.exports = Core.Base.clone({
     id: "Test",
@@ -147,7 +148,6 @@ module.exports.define("loadSubTests", function (show_structure) {
                 path = sub_test_obj.path;
             }
             if (show_structure) {
-                print("???");
                 if (!this.tests[sub_test_obj.id] && sub_test_obj.show_structure !== false) {
                     this.tests[sub_test_obj.id] = require(path);
                     this.loadTestFixes(path);
@@ -159,7 +159,7 @@ module.exports.define("loadSubTests", function (show_structure) {
             } else {
                 if (sub_test_obj.funct) {
                     print(sub_test_obj.id + ", " + path);
-                    this[sub_test_obj.funct](sub_test_obj.id, path);
+                    this[sub_test_obj.funct](sub_test_obj.id, path, sub_test_obj);
                 } else {
                     print(sub_test_obj.id + ", " + path);
                     this.runSubTest(sub_test_obj.id, path);
@@ -250,23 +250,26 @@ module.exports.assert = function (bool, label) {
 
 module.exports.getCurrStepRef = function () {
     this.scope.test_number += 1;
-    return  this.scope.test_number;
+    return this.scope.test_number;
 };
 
 
 module.exports.define("sub_test", [
-    // {
-    //     id: "UnitTests",
-    //     path: "core/test/",
-    //     funct: "coreTest",
-    //     show_structure: false,
-    // },
+    {
+        id: "UnitTests",
+        path: "lazuli-test/UnitTests.js",
+        funct: "coreTest",
+        show_structure: false,
+        full_path: true,
+        ignore_failed: true,
+    },
     {
         id: "TestCoverage",
         path: "lazuli-test/TestCoverage.js",
         funct: "coreTest",
         show_structure: false,
         full_path: "lazuli-test/TestCoverage.js",
+        ignore_failed: true,
     },
     // {
     //     id: "ModuleTests",
@@ -280,7 +283,7 @@ module.exports.define("test", function () {
     return undefined;
 });
 
-module.exports.define("coreTest", function (area_id, test_file_path) {
+module.exports.define("coreTest", function (area_id, test_file_path, obj) {
     var run_test = true;
 
     if (this.type === "unit" && area_id === "ModuleTests") {
@@ -292,19 +295,19 @@ module.exports.define("coreTest", function (area_id, test_file_path) {
     }
 
     if (run_test) {
-        this.runSubTest(area_id, test_file_path);
+        this.runSubTest(area_id, test_file_path, {}, obj.ignore_failed);
     }
 });
 
 
 module.exports.define("testCoverage", function (entity, unit) {
-    this.addProperties();
+    this.addProperties({});
     this.clearStartDates();
     //this.runFromParent();
     this.parent_scope   = null;
     this.parent_step_id = null;
     this.start();
-    this.runSubTest("TestCoverage", "core/test/TestCoverage.js", { entity: entity, unit: unit, no_report: false });
+    this.runSubTest("TestCoverage", "lazuli-test/TestCoverage.js", { entity: entity, unit: unit, no_report: false });
     this.reportResult();
     this.closeSessions();
 });
@@ -350,12 +353,12 @@ module.exports.define("addParams", function (params, subtest) {
     }
 });
 
-module.exports.define("runSubTest", function (test_obj_id, relative_path, params) {
+module.exports.define("runSubTest", function (test_obj_id, relative_path, params, ignore_failed) {
     var subtest;
     var fixes_path = "";
     var overlay_path = "";
 
-    if (this.scope.failed) {
+    if (this.scope.failed && !ignore_failed) {
         return;
     }
     if (!this.tests[test_obj_id]) {
@@ -388,7 +391,9 @@ module.exports.define("runSubTest", function (test_obj_id, relative_path, params
 
 module.exports.define("changeSession", function (user_id) {
     if (!this.scope.sessions_by_user_id[user_id] || !this.scope.sessions_by_user_id[user_id].active) {
-        this.scope.sessions_by_user_id[user_id] = x.Session.clone({ user_id: user_id });
+        this.scope.sessions_by_user_id[user_id] = Session.clone({
+            user_id: user_id,
+        });
     }
     this.scope.session = this.scope.sessions_by_user_id[user_id];
     return this.scope.session;
