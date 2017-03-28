@@ -5,6 +5,57 @@
 
 var Core = require("lapis-core/index.js");
 var Access = require("lazuli-access/index.js");
+var Rhino = require("lazuli-rhino/index.js");
+var UI = require("lazuli-ui/index.js");
+
+UI.Page.define("addGridRow", function (grid_id, add_row_value, params, field_editable) {
+    var grid,
+        id_prefix,
+        obj = {},
+        param_id,
+        params_present = false;
+
+    if (!this) {
+        this.error("addGridRow() no page object");
+        return;
+    }
+    grid = this.sections.get(grid_id);
+    if (!grid) {
+    //    throw x.Exception.clone({ id: "grid_not_found", grid: grid_id });
+        this.error("addGridRow() grid not found: " + grid_id);
+        return;
+    }
+    if (!add_row_value) {
+        obj.page_button = "list_add_" + grid_id;
+    } else {
+        obj["add_row_field_" + grid_id] = add_row_value;
+        obj.page_button = "add_row_field_" + grid_id;
+    }
+    //this.test(this.session, this.page_key, { not_saving: true }, obj);
+    this.update(obj);
+//    if (grid.toString().indexOf("/FlexUpdate/") > 0) {
+//        id_prefix = grid_id + "_";
+//    } else {
+        id_prefix = grid_id + "_" + (grid.rows.length - 1) + "_";
+//    }
+    obj = {};
+    for (param_id in params) {
+        if (params.hasOwnProperty(param_id)) {
+            if (field_editable) {
+                if (this.fields[id_prefix + param_id] && this.fields[id_prefix + param_id].editable) {
+                    obj[id_prefix + param_id] = params[param_id];
+                }
+            } else {
+                obj[id_prefix + param_id] = params[param_id];
+            }
+            params_present = true;
+        }
+    }
+    if (params_present) {
+        //return this.test(this.session, this.page_key, { not_saving: true }, obj);
+        this.update(obj);
+    }
+});
 
 module.exports = Core.Base.clone({
     id: "Test",
@@ -255,28 +306,28 @@ module.exports.getCurrStepRef = function () {
 
 
 module.exports.define("sub_test", [
-    {
-        id: "UnitTests",
-        path: "lazuli-test/UnitTests.js",
-        funct: "coreTest",
-        show_structure: false,
-        full_path: true,
-        ignore_failed: true,
-    },
-    {
-        id: "TestCoverage",
-        path: "lazuli-test/TestCoverage.js",
-        funct: "coreTest",
-        show_structure: false,
-        full_path: "lazuli-test/TestCoverage.js",
-        ignore_failed: true,
-    },
     // {
-    //     id: "ModuleTests",
-    //     full_path: true,
-    //     path: "core/test/ModuleTestsNew.js",
+    //     id: "UnitTests",
+    //     path: "lazuli-test/UnitTests.js",
     //     funct: "coreTest",
+    //     show_structure: false,
+    //     full_path: true,
+    //     ignore_failed: true,
     // },
+    // {
+    //     id: "TestCoverage",
+    //     path: "lazuli-test/TestCoverage.js",
+    //     funct: "coreTest",
+    //     show_structure: false,
+    //     full_path: "lazuli-test/TestCoverage.js",
+    //     ignore_failed: true,
+    // },
+    {
+        id: "ModuleTests",
+        full_path: true,
+        path: "lazuli-test/ModuleTest.js",
+        funct: "coreTest",
+    },
 ]);
 
 module.exports.define("test", function () {
@@ -353,7 +404,21 @@ module.exports.define("addParams", function (params, subtest) {
     }
 });
 
-module.exports.define("runSubTest", function (test_obj_id, relative_path, params, ignore_failed) {
+module.exports.define("loadFile", function (file_name) {
+    if (Rhino.app && Rhino.app.version && !Rhino.app.home_dir) {
+        Rhino.app.home_dir = "../../node_modules/" + Rhino.app.version;
+        if (Rhino.app.gitclone_suffix) {
+            Rhino.app.home_dir += "_" + Rhino.app.gitclone_suffix;
+        }
+        Rhino.app.home_dir += "/";
+    }
+    if (Rhino.app.home_dir) {
+        file_name = Rhino.app.home_dir + file_name;
+    }
+    load(file_name);
+});
+
+module.exports.define("runSubTest", function (test_obj_id, relative_path, params, ignore_failed, use_load) {
     var subtest;
     var fixes_path = "";
     var overlay_path = "";
