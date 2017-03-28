@@ -1,6 +1,3 @@
-/* global module, require */
-
-
 "use strict";
 
 var Core = require("lapis-core/index.js");
@@ -12,7 +9,6 @@ UI.Page.define("addGridRow", function (grid_id, add_row_value, params, field_edi
     var grid,
         id_prefix,
         obj = {},
-        param_id,
         params_present = false;
 
     if (!this) {
@@ -39,18 +35,16 @@ UI.Page.define("addGridRow", function (grid_id, add_row_value, params, field_edi
         id_prefix = grid_id + "_" + (grid.rows.length - 1) + "_";
 //    }
     obj = {};
-    for (param_id in params) {
-        if (params.hasOwnProperty(param_id)) {
-            if (field_editable) {
-                if (this.fields[id_prefix + param_id] && this.fields[id_prefix + param_id].editable) {
-                    obj[id_prefix + param_id] = params[param_id];
-                }
-            } else {
+    Object.keys(params).forEach(function (param_id) {
+        if (field_editable) {
+            if (this.fields[id_prefix + param_id] && this.fields[id_prefix + param_id].editable) {
                 obj[id_prefix + param_id] = params[param_id];
             }
-            params_present = true;
+        } else {
+            obj[id_prefix + param_id] = params[param_id];
         }
-    }
+        params_present = true;
+    });
     if (params_present) {
         //return this.test(this.session, this.page_key, { not_saving: true }, obj);
         this.update(obj);

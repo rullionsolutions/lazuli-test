@@ -1,5 +1,3 @@
-/* global module, require */
-
 "use strict";
 
 var Rhino = require("lazuli-rhino/index.js");
@@ -434,107 +432,108 @@ module.exports.define("getWfNode", function (page) {
 });
 
 module.exports.define("printWfPath", function (json, level) {
-    var inst;
+    var that = this;
     level = level || 0;
 
-    for (inst in json) {
-        if (json.hasOwnProperty(inst)) {
-            if (json[inst].hasOwnProperty("wf")) {
-                print("\t".repeat(level) + inst + " -> ");
-                this.printWfPath(json[inst].wf, level+1);
-            } else if (json[inst].hasOwnProperty("id")) {
-                print("\t".repeat(level) + json[inst].id + " -> " + json[inst].outcome_id);
-            }
-            this.printPathChildren(json[inst], level);
+    Object.keys(json).forEach(function (inst) {
+        if (Object.hasOwnProperty.call(json[inst], "wf")) {
+            that.output("\t".repeat(level) + inst + " -> ");
+            that.printWfPath(json[inst].wf, level + 1);
+        } else if (Object.hasOwnProperty.call(json[inst], "id")) {
+            that.output("\t".repeat(level) + json[inst].id + " -> " + json[inst].outcome_id);
         }
-    }
+        that.printPathChildren(json[inst], level);
+    });
 });
 
 module.exports.define("wfPathReport", function () {
-    var module;
-    for (module in this.wf_path) {
-        if (this.wf_path.hasOwnProperty(module)) {
-            print(module);
-            if (this.wf_path.hasOwnProperty(module)) {
-                this.printWfPath(this.wf_path[module]);
-            }
-        }
-    }
+    var that = this;
+    Object.keys(this.wf_path).forEach(function (module) {
+        that.output(module);
+        that.printWfPath(that.wf_path[module]);
+    });
 });
 
 module.exports.define("wfReport", function () {
-    var wf_node;
-    for (wf_node in this.wf_nodes) {
-        if (this.wf_nodes.hasOwnProperty(wf_node)) {
-            print(this.wf_nodes[wf_node].id + " -> " + this.wf_nodes[wf_node].outcome_id);
-        }
-    }
+    var that = this;
+    Object.keys(this.wf_nodes).forEach(function (wf_node) {
+        that.output(that.wf_nodes[wf_node].id + " -> " + that.wf_nodes[wf_node].outcome_id);
+    });
 });
 
 module.exports.define("checkOutcomes", function (page, page_id, not_existing, path) {
-    var outcome;
     if (page.transactional) {
         if (!page.outcomes) {
-            page.outcomes = {save : 1};
+            page.outcomes = {
+                save: 1,
+            };
         }
-        for (outcome in page.outcomes) {
-            if (page.outcomes.hasOwnProperty(outcome)) {
-                if (!not_existing.hasOwnProperty(page_id)) {
-                    not_existing[page_id] = [];
-                }
-                not_existing[page_id].push(outcome);
+        Object.keys(page.outcomes).forEach(function (outcome) {
+            if (!Object.hasOwnProperty.call(not_existing, page_id)) {
+                 not_existing[page_id] = [];
             }
-        }
+            not_existing[page_id].push(outcome);
+        });
     }
 });
 
 module.exports.define("reportNonTestedPages", function () {
-    var not_existing = {},
-        ignore = ["home", "privacy", "inspect", "apidocs", "context", "_wf_", "_base", "_tx" ],
-        page_id, i, reg,
-        path, page, entity, skip;
+    var not_existing = {};
+    var ignore = [
+        "home",
+        "privacy",
+        "inspect",
+        "apidocs",
+        "context",
+        "_wf_",
+        "_base",
+        "_tx",
+    ];
+    var page_id;
+    var path;
+    var that = this;
+    var i;
 
-    function skipAutomatic(node) {
-        if (node.hasOwnProperty("page_id") && node.page_id === page.id) {
+    function skipAutomatic(node, page, skip_old) {
+        var skip_new = skip_old;
+        if (Object.hasOwnProperty.call(node, "page_id") && node.page_id === page.id) {
             if (node.automatic) {
+                skip_new = true;
+            }
+        }
+        return skip_new;
+    }
+    UI.pages.each(function (page) {
+        var entity = page.entity;
+        var skip = false;
+        var reg;
+
+        for (i = 0; i < ignore.length; i += 1) {
+            reg = new RegExp(ignore[i], "g");
+            if (page.id.match(reg)) {
                 skip = true;
+                break;
             }
         }
-    }
-    for (page_id in UI.pages) {
-        if (UI.pages.hasOwnProperty(page_id)) {
-            page = x.pages[page_id];
-            entity = page.entity;
-            skip = false;
 
-            for (i = 0; i < ignore.length; i += 1) {
-                reg = new RegExp(ignore[i], "g");
-                if (page.id.match(reg)) {
-                    skip = true;
-                    break;
-                }
-            }
+        if (entity && Object.hasOwnProperty.call(x.Workflow.templates, entity.id) && !skip) {
+            x.Workflow.templates[entity.id].nodes.each(function (node) {
+                skip = skipAutomatic(node, page, skip);
+            });
+        }
 
-            if (entity && x.Workflow.templates.hasOwnProperty(entity.id) && !skip) {
-                x.Workflow.templates[entity.id].nodes.each(skipAutomatic);
-            }
-
-            if (!skip) {
-                if (Test.path.hasOwnProperty(page_id)) {
-                    path = Test.path[page_id];
-                    this.checkOutcomes(page, page_id, not_existing, path);
-
-                } else {
-                    not_existing[page_id] = [];
-                    this.checkOutcomes(page, page_id, not_existing, {});
-                }
+        if (!skip) {
+            if (Object.hasOwnProperty.call(Test.path, page_id)) {
+                path = Test.path[page_id];
+                this.checkOutcomes(page, page_id, not_existing, path);
+            } else {
+                not_existing[page_id] = [];
+                this.checkOutcomes(page, page_id, not_existing, {});
             }
         }
-    }
+    });
 
-    for (i in not_existing) {
-        if (not_existing.hasOwnProperty(i)) {
-            print( i + " -> " + not_existing[i]);
-        }
-    }
+    Object.keys(not_existing).forEach(function (page) {
+        that.output(i + " -> " + not_existing[page]);
+    });
 });

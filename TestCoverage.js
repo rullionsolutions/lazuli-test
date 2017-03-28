@@ -1,5 +1,3 @@
-/* global module, require */
-
 "use strict";
 
 var Test = require("lazuli-test/Test.js");
