@@ -4,6 +4,7 @@ var Core = require("lapis-core/index.js");
 var Access = require("lazuli-access/index.js");
 var Rhino = require("lazuli-rhino/index.js");
 var UI = require("lazuli-ui/index.js");
+var x;
 
 UI.Page.define("addGridRow", function (grid_id, add_row_value, params, field_editable) {
     var grid,
@@ -50,7 +51,7 @@ UI.Page.define("addGridRow", function (grid_id, add_row_value, params, field_edi
         this.update(obj);
     }
 });
-
+module.exports.x;
 module.exports = Core.Base.clone({
     id: "Test",
     break_on_fail: true,
@@ -86,8 +87,21 @@ module.exports.register("postAssert");
 
 
 // scope is a container for all transient data (i.e. set during test run)
+module.exports.define("getX", function (opts) {
+    if (opts.x && !x) {
+        x = opts.x;
+        x.tests = {};
+        x.Test = this;
+        x.test.ModuleTests = require("lazuli-test/ModuleTest.js");
+        x.test.UnitTests = require("lazuli-test/UnitTests.js");
+        x.test.TestCoverage = require("lazuli-test/TestCoverage.js");
+    }
+    return x;   
+});
 module.exports.define("run", function (options) {
-    // x.tests = {};
+    // 
+    x = this.getX(options);
+    this.x = x;
     this.addProperties(options);
     this.clearStartDates();
     this.runFromParent();
@@ -204,10 +218,10 @@ module.exports.define("loadSubTests", function (show_structure) {
             } else {
                 if (sub_test_obj.funct) {
                     print(sub_test_obj.id + ", " + path);
-                    this[sub_test_obj.funct](sub_test_obj.id, path, sub_test_obj);
+                    this[sub_test_obj.funct](sub_test_obj, path, sub_test_obj);
                 } else {
                     print(sub_test_obj.id + ", " + path);
-                    this.runSubTest(sub_test_obj.id, path);
+                    this.runSubTest(sub_test_obj, path);
                 }
             }
         }.bind(this));
@@ -307,6 +321,7 @@ module.exports.define("sub_test", [
     //     show_structure: false,
     //     full_path: true,
     //     ignore_failed: true,
+    //     module: true,
     // },
     // {
     //     id: "TestCoverage",
@@ -315,12 +330,14 @@ module.exports.define("sub_test", [
     //     show_structure: false,
     //     full_path: "lazuli-test/TestCoverage.js",
     //     ignore_failed: true,
+    //     module: true,
     // },
     {
         id: "ModuleTests",
         full_path: true,
         path: "lazuli-test/ModuleTest.js",
         funct: "coreTest",
+        module: true,
     },
 ]);
 
@@ -328,7 +345,7 @@ module.exports.define("test", function () {
     return undefined;
 });
 
-module.exports.define("coreTest", function (area_id, test_file_path, obj) {
+module.exports.define("coreTest", function (area, test_file_path, obj) {
     var run_test = true;
 
     if (this.type === "unit" && area_id === "ModuleTests") {
@@ -340,19 +357,21 @@ module.exports.define("coreTest", function (area_id, test_file_path, obj) {
     }
 
     if (run_test) {
-        this.runSubTest(area_id, test_file_path, {}, obj.ignore_failed);
+        this.runSubTest(area, test_file_path, {}, obj.ignore_failed);
     }
 });
 
 
-module.exports.define("testCoverage", function (entity, unit) {
+module.exports.define("testCoverage", function (entity, unit, opts) {
+    x = this.getX(opts);
+    this.x = x;
     this.addProperties({});
     this.clearStartDates();
     //this.runFromParent();
     this.parent_scope   = null;
     this.parent_step_id = null;
     this.start();
-    this.runSubTest("TestCoverage", "lazuli-test/TestCoverage.js", { entity: entity, unit: unit, no_report: false });
+    this.runSubTest({ id: "TestCoverage", module: true }, "lazuli-test/TestCoverage.js", { entity: entity, unit: unit, no_report: false });
     this.reportResult();
     this.closeSessions();
 });
@@ -412,34 +431,41 @@ module.exports.define("loadFile", function (file_name) {
     load(file_name);
 });
 
-module.exports.define("runSubTest", function (test_obj_id, relative_path, params, ignore_failed, use_load) {
+module.exports.define("runSubTest", function (test_obj, relative_path, params, ignore_failed, use_load) {
     var subtest;
     var fixes_path = "";
     var overlay_path = "";
+    var id = typeof test_obj === "string" ? test_obj : test_obj.id;
 
     if (this.scope.failed && !ignore_failed) {
         return;
     }
-    if (!this.tests[test_obj_id]) {
-        this.tests[test_obj_id] = require(relative_path);
+    if (!this.tests[id]) {
+        if (test_obj.module) {
+            this.tests[id] = require(relative_path);
+        } else {
+            load(Rhino.app.sapphire_dir + relative_path);
+            print(id);
+            this.tests[id] = x.test[id];
+        }
 
         fixes_path = this.loadTestFixes(relative_path);
         overlay_path = this.loadTestOverlays(relative_path);
     }
 
-    subtest = this.tests[test_obj_id];
+    subtest = this.tests[id];
     this.addParams(params, subtest);
 
     if (!subtest) {
-        throw "Subtest not found: " + test_obj_id;
+        throw "Subtest not found: " + id;
     }
 
-    print(Core.Format.leftJustify(this.getCurrStepRef()) + "            Starting subtest: " + test_obj_id
+    print(Core.Format.leftJustify(this.getCurrStepRef()) + "            Starting subtest: " + id
         + ", relative_path: " + relative_path
         + ", fixes_path: " + fixes_path
         + ", overlay_path: " + overlay_path
         );
-    print(subtest + ", " + test_obj_id + ", " + this.tests[test_obj_id] + ", " + relative_path);
+    print(subtest + ", " + id + ", " + this.tests[id] + ", " + relative_path);
     subtest.runFromParent(this.scope, this.getCurrStepRef() + ".");
     subtest.passed = (subtest.failed_asserts === 0);
     this.passed_cumultv += subtest.passed_asserts + subtest.passed_cumultv;
@@ -450,7 +476,7 @@ module.exports.define("runSubTest", function (test_obj_id, relative_path, params
 
 module.exports.define("changeSession", function (user_id) {
     if (!this.scope.sessions_by_user_id[user_id] || !this.scope.sessions_by_user_id[user_id].active) {
-        this.scope.sessions_by_user_id[user_id] = Access.Session.clone({
+        this.scope.sessions_by_user_id[user_id] = Access.Session.getNewSession({
             user_id: user_id,
         });
     }

@@ -18,37 +18,37 @@ module.exports.override("start", function () {
 module.exports.override("sub_test", [
     {
         id: "ad",
-        path: Rhino.app.version + "/ad/test/ad_test.js",
+        path: "/ad/test/ad_test.js",
         full_path: true,
         funct: "areaTest",
     },
     {
         id: "rm",
-        path: Rhino.app.version + "/rm/test/rm_test2.js",
+        path: "/rm/test/rm_test2.js",
         full_path: true,
         funct: "areaTest",
     },
     {
         id: "vr",
-        path: Rhino.app.version + "/vr/test/vr_test.js",
+        path: "/vr/test/vr_test.js",
         full_path: true,
         funct: "areaTest",
     },
     {
         id: "vc",
-        path: Rhino.app.version + "/vc/test2/vc_test.js",
+        path: "/vc/test2/vc_test.js",
         full_path: true,
         funct: "areaTest",
     },
     {
         id: "ts",
-        path: Rhino.app.version + "/ts/test/ts_test.js",
+        path: "/ts/test/ts_test.js",
         full_path: true,
         funct: "areaTest",
     },
     {
         id: "sv",
-        path: Rhino.app.version + "/sv/test/sv_test.js",
+        path: "/sv/test/sv_test.js",
         full_path: true,
         funct: "areaTest",
     },

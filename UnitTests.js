@@ -14,6 +14,7 @@ module.exports.override("sub_test", [
         funct: "coreTest",
         show_structure: false,
         full_path: true,
+        module: true,
     },
     {
         id: "UnitTestPage",
@@ -21,6 +22,7 @@ module.exports.override("sub_test", [
         funct: "coreTest",
         show_structure: false,
         full_path: true,
+        module: true,
     },
     {
         id: "UnitTestSQL",
@@ -28,6 +30,7 @@ module.exports.override("sub_test", [
         funct: "coreTest",
         show_structure: false,
         full_path: true,
+        module: true,
     },
     {
         id: "UnitTestTransaction",
@@ -35,6 +38,7 @@ module.exports.override("sub_test", [
         funct: "coreTest",
         show_structure: false,
         full_path: true,
+        module: true,
     },
 ]);
 

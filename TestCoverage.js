@@ -4,6 +4,7 @@ var Test = require("lazuli-test/Test.js");
 var Data = require("lazuli-data/index.js");
 var IO = require("lazuli-io/index.js");
 var Rhino = require("lazuli-rhino/index.js");
+var x;
 
 module.exports = Test.clone({
     id: "TestCoverage",
@@ -33,7 +34,7 @@ module.exports.define("resetFunctions", function (arr) {
 module.exports.override("test", function () {
     var that = this,
         base_overrides = [];
-
+    x = Test.x;
     this.passed  = 0;
     this.tests   = 0;
     this.results = {};
@@ -132,12 +133,12 @@ module.exports.define("coverage", function (entity_id, test_path, results) {
     for (f in entity) {
         if (entity.hasOwnProperty(f) && typeof entity[f] === "function" && (!this.unit || (this.unit === f || (Array.isArray(this.unit) && this.unit.indexOf(f) > -1)))) {
             file_path = test_path + entity_id + "_" + f + ".js";
-            overlay_path = file_path.replace(/^modules\//, "overlays/");
+            overlay_path = "overlays/" + file_path;
             this.tests += 1;
             test_exists = false;
 
-            if (IO.File.exists("../" + Rhino.App.version + "/" + file_path)) {
-                x.loadFile(file_path);
+            if (IO.File.exists(file_path)) {
+                load(file_path);
                 test_exists = true;
             }
             if (IO.File.exists(overlay_path)) {
@@ -150,9 +151,8 @@ module.exports.define("coverage", function (entity_id, test_path, results) {
                     test_exists = true;
                 }
             }
-
             if (test_exists) {
-                if (this[entity_id + "_" + f] && typeof this[entity_id + "_" + f] === "function") {
+                if (x.test.TestCoverage[entity_id + "_" + f] && typeof x.test.TestCoverage[entity_id + "_" + f] === "function") {
                     results[f] = true;
                     this.passed += 1;
                     try {
