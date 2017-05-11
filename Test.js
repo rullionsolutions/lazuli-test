@@ -228,9 +228,27 @@ module.exports.define("loadSubTests", function (show_structure) {
     }
 });
 
+module.exports.define("newScope", function () {
+    var scope = x.Base.clone({
+        id: "scope",
+        sessions_by_user_id: {},
+    });
+    scope.override("replaceToken", function (token) {
+        var value;
+        if (typeof this["replaceToken_" + token] === "function") {
+            value = this["replaceToken_" + token]();
+        } else {
+            value = typeof this[token] === "string" ? this[token] : "{unknown: " + token + "}";
+        }
+
+        return value;
+    });
+    return scope;
+});
+
 module.exports.define("showStructure", function () {
     var level = this.level;
-    this.scope = this.parent_scope || x.Base.clone({ id: "scope", });
+    this.scope = this.parent_scope || this.newScope();
     print(("    ").repeat(level) + "Test " + this.id + ": " + (this.title || ""));
     if (this.asserts) {
         Object.keys(this.asserts).forEach(function (assert_key) {
@@ -267,7 +285,7 @@ module.exports.runFromParent = function (parent_scope, parent_step_id) {
 
 module.exports.start = function () {
     this.start_date = new Date();
-    this.scope = this.parent_scope || Core.Base.clone({ id: "scope", sessions_by_user_id: {} });
+    this.scope = this.parent_scope || this.newScope();
     this.scope.test_number = this.parent_scope ? this.parent_scope.test_number : 0;
     this.failed_asserts = 0;
     this.passed_asserts = 0;
