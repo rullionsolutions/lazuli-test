@@ -437,7 +437,7 @@ module.exports.define("addParams", function (params, subtest) {
 
 module.exports.define("loadFile", function (file_name) {
     if (Rhino.app && Rhino.app.version && !Rhino.app.home_dir) {
-        Rhino.app.home_dir = "../../node_modules/" + Rhino.app.version;
+        Rhino.app.home_dir = "node_modules/sapphire";
         if (Rhino.app.gitclone_suffix) {
             Rhino.app.home_dir += "_" + Rhino.app.gitclone_suffix;
         }
