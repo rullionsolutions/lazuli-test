@@ -30,7 +30,7 @@ module.exports.override("sub_test", [
     },
     {
         id: "vr",
-        path: "/vr/test/vr_test.js",
+        path: "/vr/test2/vr_test.js",
         full_path: true,
         funct: "areaTest",
     },

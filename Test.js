@@ -163,8 +163,14 @@ module.exports.define("doAssert", function (assert_obj, key) {
     var result;
     if (assert_obj.linked_row) {
         row = this.scope.page.primary_row.getField(assert_obj.linked_row).getRow(false);
+        if (!row) {
+            this.error("Could not find linked row " + assert_obj.linked_row);
+        }
     }
     field = row.getField(key);
+    if (!field) {
+        this.error("Could not find field " + key);
+    }
 
     if (assert_obj.blank) {
         result = field.isBlank();
@@ -185,6 +191,9 @@ module.exports.define("doAsserts", function () {
             if (typeof that["assert_" + assert_key] !== "function") {
                 if (typeof obj.funct === "function") {
                     result = obj.funct(that.scope);
+                } else if (obj.regex) {
+                    expected = true;
+                    result = obj.regex.test(that.doAssert(obj, assert_key));
                 } else {
                     result = that.doAssert(obj, assert_key);
                 }
@@ -192,6 +201,14 @@ module.exports.define("doAsserts", function () {
                 result = that["assert_" + assert_key]();
             }
             that.assert((expected ? (expected === result) : result), that.id + "." + assert_key + ": " + obj.label);
+            if (result !== expected) {
+                if (obj.value) {
+                    print("expected: " + expected + "(type " + typeof expected + "). actual: "
+                            + result + "(type " + typeof result + ").");
+                } else if (obj.rejex) {
+                    print("looking for: " + obj.regex + ". in " + that.doAssert(obj, assert_key));
+                }
+            }
         });
     }
     this.happen("postAssert");
