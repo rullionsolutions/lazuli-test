@@ -42,7 +42,7 @@ module.exports.override("sub_test", [
     },
     {
         id: "ts",
-        path: "/ts/test/ts_test.js",
+        path: "/ts/test2/ts_test.js",
         full_path: true,
         funct: "areaTest",
     },
